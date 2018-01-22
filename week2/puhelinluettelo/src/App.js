@@ -1,41 +1,83 @@
-import React from 'react';
+import React from 'react'
+import PersonService from './services/PersonService'
+import Notification from './Notification'
 
 class App extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      persons: [
-        { name: 'Arto Hellas', number: '040-123456' },
-        { name: 'Martti Tienari', number: '040-123456' },
-        { name: 'Arto Järvinen', number: '040-123456' },
-        { name: 'Lea Kutvonen', number: '040-123456' }
-      ],
+      persons: [],
       newName: '',
       newPuh: '',
-      filter: ''
+      filter: '',
+      notification: null
     }
+  }
+
+  componentWillMount() {
+    PersonService
+      .getAll()
+      .then((res) => {
+        this.setState({ persons: res.data })
+      })
+  }
+
+  postNewPerson = (person) => {
+    PersonService
+      .create(person)
+      .then((res) => {
+        const persons = this.state.persons.concat({ ...person, id: res.data.id })
+        this.setState({
+          persons,
+          newName: '',
+          newPuh: ''
+        })
+      })
+      .catch(() => {
+
+      })
   }
 
   handleSubmit = (e) => {
     e.preventDefault()
 
-    if (this.checkDuplicates()) {
-      alert("name was a duplicate!")
-      return
+    const duplicate = this.checkDuplicates()
+    if (duplicate) {
+      if (window.confirm(`${this.state.newName} on jo olemassa, korvataanko vanha numero uudella?`)) {
+        const updated = { ...duplicate, number: this.state.newPuh}
+
+        const persons = 
+          this.state.persons
+            .filter((p) => p.name !== duplicate.name)
+            .concat(updated)
+
+        this.setState({
+          persons,
+          newName: '',
+          newPuh: ''
+        })
+
+        PersonService
+          .update(updated)
+
+        return
+      }
     }
 
     const newPerson = {
       name: this.state.newName,
-      puh: this.state.newPuh
+      number: this.state.newPuh
     }
 
-    const persons = this.state.persons.concat(newPerson)
+    this.postNewPerson(newPerson)    
+    this.setNotification(`Lisättiin henkilö ${newPerson.name}`)
+  }
 
-    this.setState({
-      persons,
-      newName: '',
-      newPuh: ''
-    })
+  setNotification = (text) => {
+    this.setState({notification: text})
+    setTimeout(() => {
+      this.setState({notification: null})
+    }, 3000)
   }
 
   handleChange = (state) => {
@@ -50,9 +92,28 @@ class App extends React.Component {
     })
   }
 
+  handleDeleteButton = (person) => {
+    return () => {
+      if (window.confirm(`haluatko varmasti poistaa henkilön ${person.name}`)) {
+        PersonService
+          .destroy(person)
+          .catch(() => {
+            this.setNotification(`Poistaminen epäonnistui, henkilö on luultavasti jo poistettu!`)
+          })
+      }
+
+      this.setState({
+        persons: this.state.persons.filter((p) => p.id !== person.id)
+      })
+    }
+  }
+
   render() {
     return (
       <div>
+        {this.state.notification &&
+          <Notification text={this.state.notification} />
+        }
         <h2>Puhelinluettelo</h2>
         <Filter onChange={this.handleChange('filter')} />
         <form onSubmit={this.handleSubmit}>
@@ -66,20 +127,20 @@ class App extends React.Component {
             <button type="submit">lisää</button>
           </div>
         </form>
-        <Lista persons={this.state.persons} filter={this.state.filter}/>
+        <Lista persons={this.state.persons} filter={this.state.filter} destroy={this.handleDeleteButton}/>
       </div>
     )
   }
 }
 
-const Lista = ({persons, filter}) => {
+const Lista = ({persons, filter, destroy}) => {
   const personElems = 
     persons
     .filter((s) => {
       return s.name.toLowerCase().includes(filter)
     })
     .map((s, i) => {
-      return <p key={i}>{s.name}  {s.puh}</p>
+      return <p key={i}>{s.name},  {s.number} <button onClick={destroy(s)}>poista</button></p>
     })
 
   return (
