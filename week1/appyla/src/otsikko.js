@@ -4,7 +4,7 @@ const Otsikko = props => {
 
   return(
     <h1>
-      {props.kurssi}
+      {props.nimi}
     </h1>
   )
 }

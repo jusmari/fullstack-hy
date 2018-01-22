@@ -1,13 +1,24 @@
 import React from 'react'
 import Osa from './osa'
 
-const Sisalto = props => {
+const Sisalto = ({kurssi}) => {
+  const osat = kurssi.osat.map((osa) => {
+    return (
+      <Osa
+        key={osa.id}
+        aihe={osa}
+      />
+    )
+  })
+
+  const yht = kurssi.osat.reduce((yht, osa) => {
+    return yht + osa.tehtavia
+  }, 0)
 
   return(
     <div>
-      <Osa aihe={props.osat[0]}/>
-      <Osa aihe={props.osat[1]}/>
-      <Osa aihe={props.osat[2]}/>
+      {osat}
+      <p>yhteensä {yht} tehtävää</p>
     </div>
   )
 }
