@@ -14,7 +14,7 @@ class App extends React.Component {
     }
   }
 
-  componentWillMount() {
+  componentDidMount() {
     PersonService
       .getAll()
       .then((res) => {
@@ -127,7 +127,9 @@ class App extends React.Component {
             <button type="submit">lisää</button>
           </div>
         </form>
-        <Lista persons={this.state.persons} filter={this.state.filter} destroy={this.handleDeleteButton}/>
+        {this.state.persons &&
+          <Lista persons={this.state.persons} filter={this.state.filter} destroy={this.handleDeleteButton}/>
+        }
       </div>
     )
   }
@@ -136,9 +138,9 @@ class App extends React.Component {
 const Lista = ({persons, filter, destroy}) => {
   const personElems = 
     persons
-    .filter((s) => {
-      return s.name.toLowerCase().includes(filter)
-    })
+    .filter((s) => 
+      s.name.toLowerCase().includes(filter)
+    )
     .map((s, i) => {
       return <p key={i}>{s.name},  {s.number} <button onClick={destroy(s)}>poista</button></p>
     })
